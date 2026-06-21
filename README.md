@@ -17,9 +17,32 @@ pip install torch --index-url https://download.pytorch.org/whl/cu128   # Blackwe
 pip install openai-whisper soundfile
 ffmpeg -y -i jfk.flac -ar 16000 -ac 1 jfk.wav                          # テスト音声
 
-python bench_infer.py    jfk.wav <tiny|base|small|large> 10
-python bench_finetune.py jfk.wav <tiny|base|small|large> 10
+python bench_infer.py    jfk.wav <tiny|base|small|large> 10 --machine pro6000-blackwell
+python bench_finetune.py jfk.wav <tiny|base|small|large> 10 --machine pro6000-blackwell
 ```
+
+## マシン横断での比較 (DGX Spark / RTX 5070 など)
+
+各実行は環境メタデータ (GPU 名 / capability / arch / torch・CUDA バージョン / 音声長) 込みで
+`results/<benchmark>_<machine>_<model>.json` に保存される。別マシンでも同じスクリプトを
+`--machine <ラベル>` を変えて実行し、生成された JSON を同じ `results/` に集めるだけで比較できる。
+
+- マシンラベル: `--machine` 引数、無ければ環境変数 `BENCH_MACHINE`、それも無ければ GPU 名から自動生成。
+- 同一 (benchmark, machine, model) は最新結果で上書き (比較表が一意になる)。
+- コード/パッケージの環境依存 (PyTorch の aarch64・CUDA ビルド等) は各環境ごとに別途整備する。
+  JSON 基盤自体は追加依存なし (torch + 標準ライブラリのみ) で動く。
+
+```bash
+# 別マシン (例: DGX Spark) で実行
+python bench_infer.py    jfk.wav large 10 --machine dgx-spark
+python bench_finetune.py jfk.wav large 10 --machine dgx-spark
+
+# results/ に集めた全 JSON からマシン横断の比較表を生成
+python compare.py                 # 標準出力に表示
+python compare.py --out COMPARISON.md
+```
+
+最新の比較結果は [`COMPARISON.md`](COMPARISON.md) を参照。
 
 ## 結果 (音声長 11.000 秒, warmup 除外 / `torch.cuda.synchronize()` で同期)
 

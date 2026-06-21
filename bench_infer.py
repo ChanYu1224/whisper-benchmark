@@ -1,40 +1,41 @@
 #!/usr/bin/env python3
 """Whisper 推論ベンチマーク。
 
-使い方: python bench_infer.py <wav> <model_name> <n_runs>
-RTF = 処理時間 / 音声長 を avg/best で出力する。
+使い方: python bench_infer.py <wav> <model_name> <n_runs> [--machine LABEL] [--out-dir DIR] [--no-json]
+RTF = 処理時間 / 音声長 を avg/best で出力し、環境情報込みで JSON 保存する。
 """
-import sys
 import time
 
 import soundfile as sf
 import torch
 import whisper
 
+import bench_common
+
 
 def main():
-    if len(sys.argv) != 4:
-        print("usage: python bench_infer.py <wav> <model_name> <n_runs>")
-        sys.exit(1)
+    parser = bench_common.base_arg_parser("Whisper 推論ベンチマーク")
+    parser.add_argument("wav")
+    parser.add_argument("model_name")
+    parser.add_argument("n_runs", type=int)
+    args = parser.parse_args()
 
-    wav = sys.argv[1]
-    model_name = sys.argv[2]
-    n_runs = int(sys.argv[3])
+    wav, model_name, n_runs = args.wav, args.model_name, args.n_runs
 
     use_cuda = torch.cuda.is_available()
     device = "cuda" if use_cuda else "cpu"
     fp16 = use_cuda  # CPU では fp16 非対応
 
-    # 音声長
     data, sr = sf.read(wav)
     audio_sec = len(data) / sr
 
-    print(f"=== bench_infer: model={model_name} device={device} fp16={fp16} ===")
+    env = bench_common.collect_env(args.machine)
+    print(f"=== bench_infer: model={model_name} device={device} fp16={fp16} "
+          f"machine={env['machine']['label']} ===")
     print(f"audio: {wav} duration={audio_sec:.3f}s")
     if not use_cuda:
         print("[WARN] CUDA が使えないため CPU で実行します。")
 
-    # モデルロード
     model = whisper.load_model(model_name, device=device)
 
     def sync():
@@ -48,7 +49,6 @@ def main():
     result = model.transcribe(wav, **decode_opts)
     sync()
 
-    # 計測
     times = []
     for i in range(n_runs):
         sync()
@@ -61,15 +61,34 @@ def main():
 
     avg = sum(times) / len(times)
     best = min(times)
+    text = result["text"].strip()
     print("--- result ---")
     print(f"avg time = {avg:.4f}s  RTF(avg) = {avg/audio_sec:.4f}  ({audio_sec/avg:.2f}x realtime)")
     print(f"best time= {best:.4f}s  RTF(best)= {best/audio_sec:.4f}  ({audio_sec/best:.2f}x realtime)")
-    print(f"text: {result['text'].strip()}")
+    print(f"text: {text}")
 
-    # 機械可読サマリ (後段で集計しやすいよう1行で)
-    print(f"SUMMARY infer model={model_name} audio={audio_sec:.3f} "
-          f"avg={avg:.4f} best={best:.4f} rtf_avg={avg/audio_sec:.4f} "
-          f"rtf_best={best/audio_sec:.4f} speedup_avg={audio_sec/avg:.2f} speedup_best={audio_sec/best:.2f}")
+    if not args.no_json:
+        record = {
+            "schema_version": bench_common.SCHEMA_VERSION,
+            "benchmark": "infer",
+            "timestamp": bench_common.now_iso(),
+            **env,
+            "audio": {"path": wav, "duration_sec": round(audio_sec, 3), "sample_rate": sr},
+            "config": {"model": model_name, "fp16": fp16, "n_runs": n_runs},
+            "metrics": {
+                "times_sec": [round(t, 6) for t in times],
+                "avg_sec": round(avg, 6),
+                "best_sec": round(best, 6),
+                "rtf_avg": round(avg / audio_sec, 6),
+                "rtf_best": round(best / audio_sec, 6),
+                "speedup_avg": round(audio_sec / avg, 3),
+                "speedup_best": round(audio_sec / best, 3),
+                "text": text,
+            },
+        }
+        path = bench_common.save_json(record, "infer", env["machine"]["label"],
+                                      model_name, args.out_dir)
+        print(f"saved: {path}")
 
 
 if __name__ == "__main__":

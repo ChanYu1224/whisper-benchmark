@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "benchmark": "finetune",
+  "timestamp": "2026-06-21T15:45:44+09:00",
+  "machine": {
+    "label": "pro6000-blackwell",
+    "hostname": "mindword-cuebex-gpu",
+    "platform": "Linux-6.17.0-35-generic-x86_64-with-glibc2.39",
+    "arch": "x86_64",
+    "python": "3.12.3"
+  },
+  "gpu": {
+    "available": true,
+    "device": "cuda",
+    "name": "NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition",
+    "capability": "12.0",
+    "torch_version": "2.11.0+cu128",
+    "torch_cuda_build": "12.8",
+    "driver_version": "580.126.20",
+    "driver_cuda_version": "13.0"
+  },
+  "audio": {
+    "path": "jfk.wav",
+    "duration_sec": 11.0,
+    "sample_rate": 16000
+  },
+  "config": {
+    "model": "small",
+    "amp_fp16": true,
+    "n_steps": 10,
+    "optimizer": "AdamW",
+    "lr": 1e-05
+  },
+  "metrics": {
+    "step_times_sec": [
+      0.031685,
+      0.030384,
+      0.079438,
+      0.044747,
+      0.046244,
+      0.043522,
+      0.043996,
+      0.043945,
+      0.042103,
+      0.042814
+    ],
+    "losses": [
+      0.461866,
+      0.461866,
+      0.461866,
+      0.299499,
+      0.173412,
+      0.054105,
+      0.017739,
+      0.011162,
+      0.007489,
+      0.005314
+    ],
+    "avg_step_sec": 0.044888,
+    "best_step_sec": 0.030384,
+    "rtf_audio_avg": 0.004081,
+    "rtf_audio_best": 0.002762,
+    "rtf_30s_avg": 0.001496,
+    "rtf_30s_best": 0.001013,
+    "warmup_loss": 0.461866,
+    "final_loss": 0.005314
+  }
+}

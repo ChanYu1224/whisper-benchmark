@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "benchmark": "infer",
+  "timestamp": "2026-06-21T15:45:39+09:00",
+  "machine": {
+    "label": "pro6000-blackwell",
+    "hostname": "mindword-cuebex-gpu",
+    "platform": "Linux-6.17.0-35-generic-x86_64-with-glibc2.39",
+    "arch": "x86_64",
+    "python": "3.12.3"
+  },
+  "gpu": {
+    "available": true,
+    "device": "cuda",
+    "name": "NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition",
+    "capability": "12.0",
+    "torch_version": "2.11.0+cu128",
+    "torch_cuda_build": "12.8",
+    "driver_version": "580.126.20",
+    "driver_cuda_version": "13.0"
+  },
+  "audio": {
+    "path": "jfk.wav",
+    "duration_sec": 11.0,
+    "sample_rate": 16000
+  },
+  "config": {
+    "model": "small",
+    "fp16": true,
+    "n_runs": 10
+  },
+  "metrics": {
+    "times_sec": [
+      0.174366,
+      0.174146,
+      0.17661,
+      0.173563,
+      0.172231,
+      0.168402,
+      0.173075,
+      0.171986,
+      0.183726,
+      0.174895
+    ],
+    "avg_sec": 0.1743,
+    "best_sec": 0.168402,
+    "rtf_avg": 0.015845,
+    "rtf_best": 0.015309,
+    "speedup_avg": 63.11,
+    "speedup_best": 65.32,
+    "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country."
+  }
+}

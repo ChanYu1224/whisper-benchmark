@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """Whisper 軽量 fine-tuning ベンチマーク (openai-whisper を直接学習ループで回す)。
 
-使い方: python bench_finetune.py <wav> <model_name> <n_steps>
+使い方: python bench_finetune.py <wav> <model_name> <n_steps> [--machine LABEL] [--out-dir DIR] [--no-json]
 1 step = forward + backward + optimizer 更新。warmup 1step を除外して計測。
 RTF = (1stepあたり時間) / 音声長。あわせて 30秒窓基準の RTF も併記。
-final_loss で重みが更新されている (loss が下がる) ことを確認する。
+final_loss で重みが更新されている (loss が下がる) ことを確認する。環境情報込みで JSON 保存。
 """
-import sys
 import time
 
 import soundfile as sf
@@ -16,15 +15,19 @@ import whisper
 from whisper.audio import N_FRAMES, log_mel_spectrogram, pad_or_trim
 from whisper.tokenizer import get_tokenizer
 
+import bench_common
+
+LR = 1e-5
+
 
 def main():
-    if len(sys.argv) != 4:
-        print("usage: python bench_finetune.py <wav> <model_name> <n_steps>")
-        sys.exit(1)
+    parser = bench_common.base_arg_parser("Whisper 軽量 fine-tuning ベンチマーク")
+    parser.add_argument("wav")
+    parser.add_argument("model_name")
+    parser.add_argument("n_steps", type=int)
+    args = parser.parse_args()
 
-    wav = sys.argv[1]
-    model_name = sys.argv[2]
-    n_steps = int(sys.argv[3])
+    wav, model_name, n_steps = args.wav, args.model_name, args.n_steps
 
     use_cuda = torch.cuda.is_available()
     device = "cuda" if use_cuda else "cpu"
@@ -33,7 +36,9 @@ def main():
     data, sr = sf.read(wav)
     audio_sec = len(data) / sr
 
-    print(f"=== bench_finetune: model={model_name} device={device} amp(fp16)={amp} ===")
+    env = bench_common.collect_env(args.machine)
+    print(f"=== bench_finetune: model={model_name} device={device} amp(fp16)={amp} "
+          f"machine={env['machine']['label']} ===")
     print(f"audio: {wav} duration={audio_sec:.3f}s")
     if not use_cuda:
         print("[WARN] CUDA が使えないため CPU で実行します。")
@@ -69,7 +74,7 @@ def main():
     dec_in = tokens[:, :-1]
     target = tokens[:, 1:]
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
     scaler = torch.amp.GradScaler("cuda", enabled=amp)
 
     def sync():
@@ -91,6 +96,7 @@ def main():
     sync()
 
     times = []
+    losses = []
     last_loss = first_loss
     for i in range(n_steps):
         sync()
@@ -99,6 +105,7 @@ def main():
         sync()
         dt = time.perf_counter() - t0
         times.append(dt)
+        losses.append(last_loss)
         print(f"  step {i+1}/{n_steps}: {dt:.4f}s  loss={last_loss:.4f}")
 
     avg = sum(times) / len(times)
@@ -109,9 +116,31 @@ def main():
     print(f"RTF(audio {audio_sec:.1f}s 基準) avg = {avg/audio_sec:.4f}  best = {best/audio_sec:.4f}")
     print(f"RTF(30秒窓 基準)            avg = {avg/30.0:.4f}  best = {best/30.0:.4f}")
 
-    print(f"SUMMARY finetune model={model_name} audio={audio_sec:.3f} "
-          f"avg={avg:.4f} best={best:.4f} rtf_audio_avg={avg/audio_sec:.4f} "
-          f"rtf_30s_avg={avg/30.0:.4f} warmup_loss={first_loss:.4f} final_loss={last_loss:.4f}")
+    if not args.no_json:
+        record = {
+            "schema_version": bench_common.SCHEMA_VERSION,
+            "benchmark": "finetune",
+            "timestamp": bench_common.now_iso(),
+            **env,
+            "audio": {"path": wav, "duration_sec": round(audio_sec, 3), "sample_rate": sr},
+            "config": {"model": model_name, "amp_fp16": amp, "n_steps": n_steps,
+                       "optimizer": "AdamW", "lr": LR},
+            "metrics": {
+                "step_times_sec": [round(t, 6) for t in times],
+                "losses": [round(l, 6) for l in losses],
+                "avg_step_sec": round(avg, 6),
+                "best_step_sec": round(best, 6),
+                "rtf_audio_avg": round(avg / audio_sec, 6),
+                "rtf_audio_best": round(best / audio_sec, 6),
+                "rtf_30s_avg": round(avg / 30.0, 6),
+                "rtf_30s_best": round(best / 30.0, 6),
+                "warmup_loss": round(first_loss, 6),
+                "final_loss": round(last_loss, 6),
+            },
+        }
+        path = bench_common.save_json(record, "finetune", env["machine"]["label"],
+                                      model_name, args.out_dir)
+        print(f"saved: {path}")
 
 
 if __name__ == "__main__":
