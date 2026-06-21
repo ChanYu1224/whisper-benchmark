@@ -40,9 +40,15 @@ python bench_finetune.py jfk.wav large 10 --machine dgx-spark
 # results/ に集めた全 JSON からマシン横断の比較表を生成
 python compare.py                 # 標準出力に表示
 python compare.py --out COMPARISON.md
+
+# 比較グラフ (PNG) を生成 (matplotlib 必要)
+pip install matplotlib
+python plot.py                    # charts/benchmark_comparison.png
 ```
 
 最新の比較結果は [`COMPARISON.md`](COMPARISON.md) を参照。
+
+![ベンチマーク比較](charts/benchmark_comparison.png)
 
 ## 結果 (音声長 11.000 秒, warmup 除外 / `torch.cuda.synchronize()` で同期)
 

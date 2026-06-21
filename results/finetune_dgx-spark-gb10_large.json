@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "benchmark": "finetune",
+  "timestamp": "2026-06-21T15:55:30+09:00",
+  "machine": {
+    "label": "dgx-spark-gb10",
+    "hostname": "voltmind-dgx1",
+    "platform": "Linux-6.17.0-1014-nvidia-aarch64-with-glibc2.39",
+    "arch": "aarch64",
+    "python": "3.12.3"
+  },
+  "gpu": {
+    "available": true,
+    "device": "cuda",
+    "name": "NVIDIA GB10",
+    "capability": "12.1",
+    "torch_version": "2.11.0+cu128",
+    "torch_cuda_build": "12.8",
+    "driver_version": "580.142",
+    "driver_cuda_version": "13.0"
+  },
+  "audio": {
+    "path": "jfk.wav",
+    "duration_sec": 11.0,
+    "sample_rate": 16000
+  },
+  "config": {
+    "model": "large",
+    "amp_fp16": true,
+    "n_steps": 10,
+    "optimizer": "AdamW",
+    "lr": 1e-05
+  },
+  "metrics": {
+    "step_times_sec": [
+      2.418402,
+      1.527482,
+      1.499255,
+      1.502837,
+      1.499963,
+      1.505869,
+      1.501295,
+      1.504298,
+      1.497544,
+      1.499762
+    ],
+    "losses": [
+      0.453138,
+      0.191377,
+      0.028674,
+      0.00369,
+      0.001481,
+      0.000608,
+      0.000354,
+      0.000245,
+      0.000209,
+      0.000185
+    ],
+    "avg_step_sec": 1.595671,
+    "best_step_sec": 1.497544,
+    "rtf_audio_avg": 0.145061,
+    "rtf_audio_best": 0.13614,
+    "rtf_30s_avg": 0.053189,
+    "rtf_30s_best": 0.049918,
+    "warmup_loss": 0.453138,
+    "final_loss": 0.000185
+  }
+}

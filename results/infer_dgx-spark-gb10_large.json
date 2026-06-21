@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "benchmark": "infer",
+  "timestamp": "2026-06-21T15:55:01+09:00",
+  "machine": {
+    "label": "dgx-spark-gb10",
+    "hostname": "voltmind-dgx1",
+    "platform": "Linux-6.17.0-1014-nvidia-aarch64-with-glibc2.39",
+    "arch": "aarch64",
+    "python": "3.12.3"
+  },
+  "gpu": {
+    "available": true,
+    "device": "cuda",
+    "name": "NVIDIA GB10",
+    "capability": "12.1",
+    "torch_version": "2.11.0+cu128",
+    "torch_cuda_build": "12.8",
+    "driver_version": "580.142",
+    "driver_cuda_version": "13.0"
+  },
+  "audio": {
+    "path": "jfk.wav",
+    "duration_sec": 11.0,
+    "sample_rate": 16000
+  },
+  "config": {
+    "model": "large",
+    "fp16": true,
+    "n_runs": 10
+  },
+  "metrics": {
+    "times_sec": [
+      1.006019,
+      1.000375,
+      1.006731,
+      1.00179,
+      1.004473,
+      0.999519,
+      1.002274,
+      1.003705,
+      1.006765,
+      1.006376
+    ],
+    "avg_sec": 1.003803,
+    "best_sec": 0.999519,
+    "rtf_avg": 0.091255,
+    "rtf_best": 0.090865,
+    "speedup_avg": 10.958,
+    "speedup_best": 11.005,
+    "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country."
+  }
+}
