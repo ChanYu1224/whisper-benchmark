@@ -56,3 +56,57 @@
 | small | 0.0053 | 0.0053 |
 | large | 0.0002 | 0.0002 |
 
+## Gemma 推論 (テキスト生成, 条件別)
+
+### gemma: decode throughput (tok/s, 大きいほど速い)
+
+| model | quant | pro6000-blackwell |
+|---|---|---|
+| gemma-3-27b-it | fp16 | 18.44 |
+| gemma-3-27b-it | bf16 | 18.09 |
+| gemma-3-27b-it | int8 | 7.50 |
+| gemma-3-27b-it | int4 | 22.96 |
+| gemma-3-4b-it | fp16 | 58.80 |
+| gemma-3-4b-it | bf16 | 58.29 |
+| gemma-3-4b-it | int8 | 14.78 |
+| gemma-3-4b-it | int4 | 41.25 |
+
+### gemma: end-to-end throughput (tok/s)
+
+| model | quant | pro6000-blackwell |
+|---|---|---|
+| gemma-3-27b-it | fp16 | 18.43 |
+| gemma-3-27b-it | bf16 | 18.08 |
+| gemma-3-27b-it | int8 | 7.49 |
+| gemma-3-27b-it | int4 | 22.68 |
+| gemma-3-4b-it | fp16 | 58.76 |
+| gemma-3-4b-it | bf16 | 58.26 |
+| gemma-3-4b-it | int8 | 14.77 |
+| gemma-3-4b-it | int4 | 41.18 |
+
+### gemma: TTFT (ms, 小さいほど速い)
+
+| model | quant | pro6000-blackwell |
+|---|---|---|
+| gemma-3-27b-it | fp16 | 57.97 |
+| gemma-3-27b-it | bf16 | 61.73 |
+| gemma-3-27b-it | int8 | 189.13 |
+| gemma-3-27b-it | int4 | 181.28 |
+| gemma-3-4b-it | fp16 | 19.71 |
+| gemma-3-4b-it | bf16 | 19.45 |
+| gemma-3-4b-it | int8 | 82.14 |
+| gemma-3-4b-it | int4 | 34.74 |
+
+### gemma: VRAM (GB)
+
+| model | quant | pro6000-blackwell |
+|---|---|---|
+| gemma-3-27b-it | fp16 | 55.08 |
+| gemma-3-27b-it | bf16 | 55.08 |
+| gemma-3-27b-it | int8 | 29.87 |
+| gemma-3-27b-it | int4 | 17.99 |
+| gemma-3-4b-it | fp16 | 8.66 |
+| gemma-3-4b-it | bf16 | 8.66 |
+| gemma-3-4b-it | int8 | 5.08 |
+| gemma-3-4b-it | int4 | 3.53 |
+

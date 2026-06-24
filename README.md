@@ -21,6 +21,28 @@ python bench_infer.py    jfk.wav <tiny|base|small|large> 10 --machine pro6000-bl
 python bench_finetune.py jfk.wav <tiny|base|small|large> 10 --machine pro6000-blackwell
 ```
 
+## Gemma 推論ベンチ (テキスト生成 LLM)
+
+Whisper とは別軸で、Gemma のテキスト生成スループットを計測する (`bench_gemma.py`)。
+LLM は RTF ではなく以下の指標で測る:
+
+- **TTFT** (Time To First Token): 最初の生成トークンまで = prefill レイテンシ
+- **decode throughput**: 生成フェーズの tokens/sec
+- **e2e throughput**: 全体の tokens/sec / **VRAM**: ピーク使用量
+
+`--quant` で **fp16 / bf16 / int8 / int4** を切り替え、同じ条件軸でマシン横断比較できる
+(int8/int4 は bitsandbytes)。Gemma は gated モデルなので HuggingFace のトークンと
+ライセンス同意が必要。依存追加: `transformers accelerate bitsandbytes`。
+
+```bash
+pip install "transformers>=4.50" accelerate bitsandbytes
+huggingface-cli login          # Gemma ライセンス同意済みアカウント
+
+python bench_gemma.py google/gemma-3-4b-it  --quant fp16 --machine pro6000-blackwell
+python bench_gemma.py google/gemma-3-27b-it --quant int4 --machine pro6000-blackwell
+# 条件を変えて回すと results/gemma_<machine>_<model>_<quant>.json に蓄積される
+```
+
 ## マシン横断での比較 (DGX Spark / RTX 5070 など)
 
 各実行は環境メタデータ (GPU 名 / capability / arch / torch・CUDA バージョン / 音声長) 込みで

@@ -90,13 +90,17 @@ def base_arg_parser(description: str) -> argparse.ArgumentParser:
 
 
 def save_json(record: dict, benchmark: str, machine_label: str, model: str,
-              out_dir: str) -> str:
-    """results/<benchmark>_<machine>_<model>.json に保存しパスを返す。
+              out_dir: str, variant: str | None = None) -> str:
+    """results/<benchmark>_<machine>_<model>[_<variant>].json に保存しパスを返す。
 
-    同一 (benchmark, machine, model) は最新結果で上書き (比較表が一意になる)。
+    同一 (benchmark, machine, model, variant) は最新結果で上書き (比較表が一意になる)。
+    variant は dtype/量子化など条件を区別するためのタグ (例: fp16, int8)。
     """
     os.makedirs(out_dir, exist_ok=True)
-    fname = f"{benchmark}_{_slug(machine_label)}_{_slug(model)}.json"
+    parts = [benchmark, _slug(machine_label), _slug(model)]
+    if variant:
+        parts.append(_slug(variant))
+    fname = "_".join(parts) + ".json"
     path = os.path.join(out_dir, fname)
     with open(path, "w") as f:
         json.dump(record, f, indent=2, ensure_ascii=False)

@@ -70,6 +70,38 @@ def build(records, benchmark, metric_key, metric_label):
     return f"### {benchmark}: {metric_label}\n\n" + md_table(headers, rows)
 
 
+QUANT_ORDER = {"fp16": 0, "bf16": 1, "int8": 2, "int4": 3}
+
+
+def build_gemma(records, metric_key, metric_label):
+    """Gemma: 行 = (model, quant), 列 = machine。"""
+    recs = [r for r in records if r["benchmark"] == "gemma"]
+    if not recs:
+        return None
+    machines = sorted({r["machine"]["label"] for r in recs})
+
+    def mq_key(t):
+        model, quant = t
+        return (model, QUANT_ORDER.get(quant, 99), quant)
+
+    mqs = sorted({(r["config"]["model"], r["config"]["quant"]) for r in recs}, key=mq_key)
+
+    cell = {}
+    for r in recs:
+        cell[(r["machine"]["label"], r["config"]["model"], r["config"]["quant"])] = \
+            r["metrics"].get(metric_key)
+
+    headers = ["model", "quant"] + machines
+    rows = []
+    for model, quant in mqs:
+        row = [model, quant]
+        for mc in machines:
+            v = cell.get((mc, model, quant))
+            row.append(f"{v:.2f}" if isinstance(v, (int, float)) else "-")
+        rows.append(row)
+    return f"### gemma: {metric_label}\n\n" + md_table(headers, rows)
+
+
 def main():
     ap = argparse.ArgumentParser(description="ベンチ結果のマシン横断比較")
     ap.add_argument("--results-dir", default="results")
@@ -106,6 +138,17 @@ def main():
         t = build(records, "finetune", key, lbl)
         if t:
             sections.append(t + "\n")
+
+    # Gemma (テキスト生成 LLM)
+    if any(r["benchmark"] == "gemma" for r in records):
+        sections.append("## Gemma 推論 (テキスト生成, 条件別)\n")
+        for key, lbl in [("decode_tps", "decode throughput (tok/s, 大きいほど速い)"),
+                         ("e2e_tps_best", "end-to-end throughput (tok/s)"),
+                         ("ttft_ms", "TTFT (ms, 小さいほど速い)"),
+                         ("vram_gb", "VRAM (GB)")]:
+            t = build_gemma(records, key, lbl)
+            if t:
+                sections.append(t + "\n")
 
     text = "\n".join(sections)
     if args.out:
