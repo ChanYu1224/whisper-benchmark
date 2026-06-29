@@ -68,6 +68,51 @@ def draw_panel(ax, records, benchmark, metric_key, title, ylabel, log_y):
     ax.legend(fontsize=8)
 
 
+QUANT_ORDER = {"fp16": 0, "bf16": 1, "int8": 2, "int4": 3}
+
+# Gemma 用パネル (benchmark=gemma): (metric_key, title, ylabel, log_y)
+GEMMA_PANELS = [
+    ("decode_tps", "Gemma: decode throughput (higher is faster)", "tok/s", False),
+    ("ttft_ms",    "Gemma: TTFT (lower is faster)",               "ms",    False),
+    ("vram_gb",    "Gemma: peak VRAM",                            "GB",    False),
+]
+
+
+def draw_gemma_panel(ax, records, metric_key, title, ylabel, log_y):
+    recs = [r for r in records if r["benchmark"] == "gemma"]
+    machines = sorted({r["machine"]["label"] for r in recs})
+
+    def mq_key(t):
+        model, quant = t
+        return (model, QUANT_ORDER.get(quant, 99), quant)
+
+    combos = sorted({(r["config"]["model"], r["config"]["quant"]) for r in recs}, key=mq_key)
+    labels = [f"{m.replace('gemma-3-','').replace('-it','')}\n{q}" for m, q in combos]
+
+    cell = {}
+    for r in recs:
+        cell[(r["machine"]["label"], r["config"]["model"], r["config"]["quant"])] = \
+            r["metrics"].get(metric_key)
+
+    n = len(machines)
+    width = 0.8 / max(n, 1)
+    x = range(len(combos))
+    for i, mc in enumerate(machines):
+        offsets = [xi + (i - (n - 1) / 2) * width for xi in x]
+        vals = [cell.get((mc, m, q)) or 0 for m, q in combos]
+        bars = ax.bar(offsets, vals, width=width, label=mc)
+        ax.bar_label(bars, fmt="%.3g", fontsize=7, padding=2)
+
+    ax.set_title(title, fontsize=10)
+    ax.set_ylabel(ylabel, fontsize=9)
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(labels, fontsize=8)
+    if log_y:
+        ax.set_yscale("log")
+    ax.grid(axis="y", linestyle=":", alpha=0.5)
+    ax.legend(fontsize=8)
+
+
 def main():
     ap = argparse.ArgumentParser(description="ベンチ結果のマシン横断比較グラフ")
     ap.add_argument("--results-dir", default="results")
@@ -80,15 +125,28 @@ def main():
         return
 
     os.makedirs(args.out_dir, exist_ok=True)
-    fig, axes = plt.subplots(2, 2, figsize=(13, 9))
-    for ax, (bench, key, title, ylabel, log_y) in zip(axes.flat, PANELS):
-        draw_panel(ax, records, bench, key, title, ylabel, log_y)
 
-    fig.suptitle("Whisper GPU Benchmark — machine comparison", fontsize=13)
-    fig.tight_layout(rect=(0, 0, 1, 0.97))
-    out = os.path.join(args.out_dir, "benchmark_comparison.png")
-    fig.savefig(out, dpi=130)
-    print(f"wrote {out}")
+    # Whisper (推論 / fine-tuning)
+    if any(r["benchmark"] in ("infer", "finetune") for r in records):
+        fig, axes = plt.subplots(2, 2, figsize=(13, 9))
+        for ax, (bench, key, title, ylabel, log_y) in zip(axes.flat, PANELS):
+            draw_panel(ax, records, bench, key, title, ylabel, log_y)
+        fig.suptitle("Whisper GPU Benchmark — machine comparison", fontsize=13)
+        fig.tight_layout(rect=(0, 0, 1, 0.97))
+        out = os.path.join(args.out_dir, "benchmark_comparison.png")
+        fig.savefig(out, dpi=130)
+        print(f"wrote {out}")
+
+    # Gemma (テキスト生成 LLM, 条件別)
+    if any(r["benchmark"] == "gemma" for r in records):
+        fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+        for ax, (key, title, ylabel, log_y) in zip(axes.flat, GEMMA_PANELS):
+            draw_gemma_panel(ax, records, key, title, ylabel, log_y)
+        fig.suptitle("Gemma inference Benchmark — by model/quant, machine comparison", fontsize=13)
+        fig.tight_layout(rect=(0, 0, 1, 0.95))
+        out = os.path.join(args.out_dir, "gemma_comparison.png")
+        fig.savefig(out, dpi=130)
+        print(f"wrote {out}")
 
 
 if __name__ == "__main__":

@@ -43,6 +43,11 @@ python bench_gemma.py google/gemma-3-27b-it --quant int4 --machine pro6000-black
 # 条件を変えて回すと results/gemma_<machine>_<model>_<quant>.json に蓄積される
 ```
 
+`compare.py` / `plot.py` は Gemma 結果も自動で取り込み、条件別 (model×quant) の比較表・
+グラフ (`charts/gemma_comparison.png`) を出力する。
+
+![Gemma 比較](charts/gemma_comparison.png)
+
 ## マシン横断での比較 (DGX Spark / RTX 5070 など)
 
 各実行は環境メタデータ (GPU 名 / capability / arch / torch・CUDA バージョン / 音声長) 込みで
